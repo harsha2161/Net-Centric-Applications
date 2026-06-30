@@ -5,10 +5,9 @@ const { protect } = require('../middlewares/authMiddleware');
 const { restrictTo } = require('../middlewares/roleMiddleware');
 
 router.use(protect);
-router.use(restrictTo('Admin'));
 
-router.get('/', userController.getAllUsers);
-router.patch('/:id', userController.updateUser);
-router.delete('/:id', userController.deleteUser);
+router.get('/', restrictTo('Admin', 'Recruiter'), userController.getAllUsers);
+router.patch('/:id', restrictTo('Admin'), userController.updateUser);
+router.delete('/:id', restrictTo('Admin'), userController.deleteUser);
 
 module.exports = router;

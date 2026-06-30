@@ -19,9 +19,29 @@ const createProject = async (req, res) => {
 
 const getProjects = async (req, res) => {
   try {
-    const projects = await projectService.getProjects(req.user, req.query);
+    const { projects, total, page, limit, pages } = await projectService.getProjects(req.user, req.query);
     return res.status(200).json({
       count: projects.length,
+      total,
+      page,
+      limit,
+      pages,
+      projects
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+const getLikedProjects = async (req, res) => {
+  try {
+    const { projects, total, page, limit, pages } = await projectService.getLikedProjects(req.user, req.query);
+    return res.status(200).json({
+      count: projects.length,
+      total,
+      page,
+      limit,
+      pages,
       projects
     });
   } catch (error) {
@@ -85,5 +105,6 @@ module.exports = {
   getProjectById,
   updateProject,
   deleteProject,
-  updateVisibility
+  updateVisibility,
+  getLikedProjects
 };

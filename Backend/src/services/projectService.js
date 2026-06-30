@@ -32,11 +32,18 @@ class ProjectService {
   }
 
   async getProjects(user, queryParams) {
-    const { search, technologies } = queryParams;
+    const { search, technologies, page, limit, followedOnly, studentId } = queryParams;
     const query = {};
 
+    if (studentId) {
+      query.studentId = studentId;
+    }
+
+    // Role-based visibility boundaries
     if (user.role === 'Student') {
       query.$or = [{ isPublic: true }, { studentId: user._id || user.id }];
+    } else if (user.role === 'Recruiter') {
+      query.isPublic = true;
     }
 
     if (search) {
@@ -51,7 +58,51 @@ class ProjectService {
       query.technologiesUsed = { $in: techArray.map(t => new RegExp(t, 'i')) };
     }
 
-    return await Project.find(query).populate('studentId', 'name email profilePicture').sort({ createdAt: -1 });
+    // Followed only filter (for Recruiters)
+    if (followedOnly === 'true' && user.role === 'Recruiter') {
+      const Follower = require('../models/Follower');
+      const recruiterId = user._id || user.id;
+      const follows = await Follower.find({ recruiterId });
+      const studentIds = follows.map(f => f.studentId);
+      query.studentId = { $in: studentIds };
+    }
+
+    const pageNum = parseInt(page) || 1;
+    const limitNum = parseInt(limit) || 10;
+    const skip = (pageNum - 1) * limitNum;
+
+    const total = await Project.countDocuments(query);
+    const projects = await Project.find(query)
+      .populate('studentId', 'name email profilePicture')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum);
+
+    // Compute userLiked and likesCount
+    const Like = require('../models/Like');
+    const userId = user._id || user.id;
+    const projectIds = projects.map(p => p._id);
+    
+    const userLikes = await Like.find({ userId, projectId: { $in: projectIds } });
+    const likedIdsSet = new Set(userLikes.map(l => l.projectId.toString()));
+
+    const allLikes = await Like.aggregate([
+      { $match: { projectId: { $in: projectIds } } },
+      { $group: { _id: '$projectId', count: { $sum: 1 } } }
+    ]);
+    const likesMap = {};
+    allLikes.forEach(item => {
+      likesMap[item._id.toString()] = item.count;
+    });
+
+    const projectsWithLikes = projects.map(p => {
+      const pObj = p.toJSON();
+      pObj.userLiked = likedIdsSet.has(p._id.toString());
+      pObj.likesCount = likesMap[p._id.toString()] || 0;
+      return pObj;
+    });
+
+    return { projects: projectsWithLikes, total, page: pageNum, limit: limitNum, pages: Math.ceil(total / limitNum) };
   }
 
   async getProjectById(projectId, user) {
@@ -80,6 +131,52 @@ class ProjectService {
     Object.assign(project, updateData);
     await project.save();
     return project;
+  }
+
+  async getLikedProjects(user, queryParams) {
+    const { page, limit } = queryParams;
+    const pageNum = parseInt(page) || 1;
+    const limitNum = parseInt(limit) || 10;
+    const skip = (pageNum - 1) * limitNum;
+
+    const Like = require('../models/Like');
+    const userId = user._id || user.id;
+    const likes = await Like.find({ userId });
+    const projectIds = likes.map(like => like.projectId);
+
+    const query = { _id: { $in: projectIds } };
+    
+    // Only return public projects for Recruiter
+    if (user.role === 'Recruiter') {
+      query.isPublic = true;
+    }
+
+    const total = await Project.countDocuments(query);
+    const projects = await Project.find(query)
+      .populate('studentId', 'name email profilePicture')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum);
+
+    // Compute userLiked (always true for this list) and likesCount
+    const projectIdsInList = projects.map(p => p._id);
+    const allLikes = await Like.aggregate([
+      { $match: { projectId: { $in: projectIdsInList } } },
+      { $group: { _id: '$projectId', count: { $sum: 1 } } }
+    ]);
+    const likesMap = {};
+    allLikes.forEach(item => {
+      likesMap[item._id.toString()] = item.count;
+    });
+
+    const projectsWithLikes = projects.map(p => {
+      const pObj = p.toJSON();
+      pObj.userLiked = true;
+      pObj.likesCount = likesMap[p._id.toString()] || 0;
+      return pObj;
+    });
+
+    return { projects: projectsWithLikes, total, page: pageNum, limit: limitNum, pages: Math.ceil(total / limitNum) };
   }
 
   async deleteProject(projectId, user) {
