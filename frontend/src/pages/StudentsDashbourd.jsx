@@ -5,11 +5,19 @@ import {
   FolderGit2, Users, PlusCircle, Search, 
   ExternalLink, Edit3, Clock, Globe, 
   Camera, Image as ImageIcon, X, ChevronRight,
-  Code
+  Code, Bell
 } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
+import ProjectCard from '../components/ProjectCard';
 import Navbar from '../components/Navbar';
+import { useAuth } from '../context/AuthContext';
+
+const STUDENT_MOCK_NOTIFICATIONS = [
+  { id: 'notif-1', message: "Recruiter 'Sarah Williams' liked your project: 'Nexus - Social Platform'.", time: '2 hours ago', type: 'like' },
+  { id: 'notif-2', message: "Admin approved your project: 'Aura - Health Tracker' and it is now Public.", time: '5 hours ago', type: 'approval' },
+  { id: 'notif-3', message: "Recruiter 'Michael Chen' started following you.", time: '1 day ago', type: 'follow' },
+];
 
 // Mock Data
 const INITIAL_MY_PROJECTS = [
@@ -68,8 +76,18 @@ const StudentsDashbourd = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
-  const token = localStorage.getItem("token");
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const { token, user } = useAuth();
+
+  // Animation Variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: { y: 0, opacity: 1, transition: { type: "spring", stiffness: 100, damping: 15 } }
+  };
 
   useEffect(() => {
     setIsLoading(true);
@@ -182,258 +200,29 @@ const StudentsDashbourd = () => {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-[#09090b] text-zinc-100 pt-24 pb-12 px-6 md:px-12 relative overflow-hidden">
+      <div className="min-h-screen bg-background text-zinc-100 pt-24 pb-12 px-6 md:px-12 relative overflow-hidden">
         {/* Background decoration */}
         <div className="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-600/10 blur-[120px] pointer-events-none" />
-      <div className="fixed bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-purple-600/10 blur-[120px] pointer-events-none" />
+        <div className="fixed bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-purple-600/10 blur-[120px] pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto relative z-10">
-        <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div>
-            <motion.h1 
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400 mb-4"
-            >
-              Student Hub
-            </motion.h1>
-            <motion.p 
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="text-zinc-400 text-lg max-w-xl"
-            >
-              Manage your project portfolio and discover inspiring work from your peers.
-            </motion.p>
-          </div>
+        <div className="max-w-7xl mx-auto relative z-10">
+          {/* Header */}
+          <header className="mb-10 flex items-center gap-3">
+            <div className="bg-indigo-500/20 p-2.5 rounded-xl border border-indigo-500/30">
+              <FolderGit2 className="w-6 h-6 text-indigo-400" />
+            </div>
+            <div>
+              <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">
+                Student <span className="text-transparent bg-clip-text bg-linear-to-r from-indigo-400 to-purple-400">Dashboard</span>
+              </h1>
+              <p className="text-zinc-400 text-sm md:text-base mt-1">
+                Manage your project portfolio and discover inspiring work from your peers.
+              </p>
+            </div>
+          </header>
 
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
-            className="flex p-1 bg-zinc-900/50 backdrop-blur-md rounded-full border border-zinc-800 w-fit"
-          >
-            <button
-              onClick={() => setActiveTab('portfolio')}
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${
-                activeTab === 'portfolio' 
-                  ? 'bg-indigo-600 text-white shadow-[0_0_15px_rgba(79,70,229,0.3)]' 
-                  : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
-              }`}
-            >
-              <FolderGit2 size={16} />
-              My Portfolio
-            </button>
-            <button
-              onClick={() => setActiveTab('showcase')}
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${
-                activeTab === 'showcase' 
-                  ? 'bg-indigo-600 text-white shadow-[0_0_15px_rgba(79,70,229,0.3)]' 
-                  : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
-              }`}
-            >
-              <Users size={16} />
-              Peer Showcase
-            </button>
-          </motion.div>
-        </header>
-
-        <AnimatePresence mode="wait">
-          {activeTab === 'portfolio' && !isFormOpen && (
-            <motion.div
-              key="portfolio"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <div className="flex justify-between items-center mb-8">
-                <h2 className="text-2xl font-semibold flex items-center gap-2">
-                  <span className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400">
-                    <FolderGit2 size={20} />
-                  </span>
-                  My Projects
-                </h2>
-                <Button onClick={() => handleOpenForm()}>
-                  <PlusCircle size={18} />
-                  New Project
-                </Button>
-              </div>
-
-              {myProjects.length === 0 ? (
-                <div className="text-center py-20 border border-dashed border-zinc-800 rounded-3xl bg-zinc-900/20 backdrop-blur-sm">
-                  <div className="w-16 h-16 rounded-full bg-zinc-800/50 flex items-center justify-center mx-auto mb-4 text-zinc-500">
-                    <FolderGit2 size={28} />
-                  </div>
-                  <h3 className="text-xl font-medium mb-2">No projects yet</h3>
-                  <p className="text-zinc-400 mb-6 max-w-md mx-auto">
-                    Start building your portfolio by adding your first project. Showcase your skills to the world.
-                  </p>
-                  <Button onClick={() => handleOpenForm()}>Create First Project</Button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {myProjects.map(project => (
-                    <Card key={project.id} className="group p-0 hover:border-indigo-500/30 transition-all duration-300">
-                      <div className="h-48 relative overflow-hidden bg-zinc-900 rounded-t-3xl">
-                        {project.coverImage ? (
-                          <img 
-                            src={project.coverImage} 
-                            alt={project.title} 
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-zinc-700">
-                            <ImageIcon size={48} />
-                          </div>
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-900/40 to-transparent" />
-                        
-                        {/* Status Badge */}
-                        <div className="absolute top-4 right-4">
-                          <div className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1.5 backdrop-blur-md border ${
-                            project.status === 'Public' 
-                              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                              : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                          }`}>
-                            {project.status === 'Public' ? <Globe size={12} /> : <Clock size={12} />}
-                            {project.status}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="p-6">
-                        <h3 className="text-xl font-bold mb-2 group-hover:text-indigo-400 transition-colors">{project.title}</h3>
-                        <p className="text-zinc-400 text-sm mb-4 line-clamp-2">{project.description}</p>
-                        
-                        <div className="flex flex-wrap gap-2 mb-6">
-                          {project.technologies.slice(0, 3).map((tech, i) => (
-                            <span key={i} className="px-2 py-1 rounded-md bg-zinc-800 text-xs text-zinc-300 border border-zinc-700/50">
-                              {tech}
-                            </span>
-                          ))}
-                          {project.technologies.length > 3 && (
-                            <span className="px-2 py-1 rounded-md bg-zinc-800 text-xs text-zinc-500 border border-zinc-700/50">
-                              +{project.technologies.length - 3}
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="flex items-center justify-between pt-4 border-t border-zinc-800/50">
-                          <button 
-                            onClick={() => window.open(project.demoLink, '_blank')}
-                            className="text-zinc-400 hover:text-white flex items-center gap-1.5 text-sm transition-colors"
-                          >
-                            <ExternalLink size={14} /> View Demo
-                          </button>
-                          <div className="flex items-center gap-2">
-                            <button 
-                              onClick={() => handleOpenForm(project)}
-                              className="p-2 rounded-full hover:bg-zinc-800 text-zinc-400 hover:text-indigo-400 transition-colors"
-                            >
-                              <Edit3 size={16} />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </motion.div>
-          )}
-
-          {activeTab === 'showcase' && !isFormOpen && (
-            <motion.div
-              key="showcase"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-                <h2 className="text-2xl font-semibold flex items-center gap-2">
-                  <span className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-400">
-                    <Users size={20} />
-                  </span>
-                  Peer Showcase
-                </h2>
-                
-                <div className="relative w-full md:w-72">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Search size={16} className="text-zinc-500" />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Search projects or skills..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none transition-all text-sm"
-                  />
-                </div>
-              </div>
-
-              {filteredPeerProjects.length === 0 ? (
-                <div className="text-center py-20">
-                  <p className="text-zinc-500">No public projects found matching your search.</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredPeerProjects.map(project => (
-                    <Card key={project.id} className="group p-0 hover:border-purple-500/30 transition-all duration-300">
-                      <div className="h-48 relative overflow-hidden bg-zinc-900 rounded-t-3xl">
-                        {project.coverImage ? (
-                          <img 
-                            src={project.coverImage} 
-                            alt={project.title} 
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-zinc-700">
-                            <ImageIcon size={48} />
-                          </div>
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-900/40 to-transparent" />
-                        
-                        <div className="absolute top-4 left-4">
-                          <div className="px-3 py-1 rounded-full text-xs font-medium bg-black/40 backdrop-blur-md border border-white/10 text-white flex items-center gap-2">
-                            <div className="w-4 h-4 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500" />
-                            {project.studentName}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="p-6">
-                        <h3 className="text-xl font-bold mb-2 group-hover:text-purple-400 transition-colors">{project.title}</h3>
-                        <p className="text-zinc-400 text-sm mb-4 line-clamp-2">{project.description}</p>
-                        
-                        <div className="flex flex-wrap gap-2 mb-6">
-                          {project.technologies.slice(0, 3).map((tech, i) => (
-                            <span key={i} className="px-2 py-1 rounded-md bg-zinc-800 text-xs text-zinc-300 border border-zinc-700/50">
-                              {tech}
-                            </span>
-                          ))}
-                        </div>
-
-                        <div className="pt-4 border-t border-zinc-800/50">
-                          <a 
-                            href={project.demoLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 text-sm text-indigo-400 hover:text-indigo-300 font-medium transition-colors"
-                          >
-                            View Live Project <ChevronRight size={14} />
-                          </a>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </motion.div>
-          )}
-
-          {isFormOpen && (
+          {isFormOpen ? (
+            /* PROJECT FORM VIEW */
             <motion.div
               key="form"
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -469,7 +258,7 @@ const StudentsDashbourd = () => {
                         value={formData.title}
                         onChange={(e) => setFormData({...formData, title: e.target.value})}
                         className="w-full px-4 py-3 bg-zinc-900/50 border border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none transition-all"
-                        placeholder="e.g. Nexus Social Platform"
+                        placeholder="e.g. Nexus Social Network"
                       />
                     </div>
 
@@ -481,13 +270,13 @@ const StudentsDashbourd = () => {
                         value={formData.description}
                         onChange={(e) => setFormData({...formData, description: e.target.value})}
                         className="w-full px-4 py-3 bg-zinc-900/50 border border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none transition-all resize-none"
-                        placeholder="Describe what your project does, the problem it solves, and its key features..."
+                        placeholder="Describe your project, its goals, and what you achieved..."
                       />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-zinc-300 mb-1.5 flex items-center gap-2">
+                        <label className="text-sm font-medium text-zinc-300 mb-1.5 flex items-center gap-2">
                           <Code size={14} /> Technologies Used *
                         </label>
                         <input 
@@ -500,7 +289,7 @@ const StudentsDashbourd = () => {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-zinc-300 mb-1.5 flex items-center gap-2">
+                        <label className="text-sm font-medium text-zinc-300 mb-1.5 flex items-center gap-2">
                           <ExternalLink size={14} /> Demo Link
                         </label>
                         <input 
@@ -565,10 +354,217 @@ const StudentsDashbourd = () => {
                 </form>
               </Card>
             </motion.div>
+          ) : (
+            /* TWO COLUMN DASHBOARD GRID VIEW */
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+              {/* Left Column: Tabs & Content */}
+              <div className="lg:col-span-8 xl:col-span-9 space-y-6">
+                
+                {/* Tabs Navigation (Left Aligned like Recruiter page) */}
+                <div className="flex space-x-1 glass rounded-2xl p-1.5 border border-zinc-800/50 w-fit">
+                  <button
+                    onClick={() => setActiveTab('portfolio')}
+                    className={`px-6 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-2 ${
+                      activeTab === 'portfolio' 
+                        ? 'bg-zinc-800 text-white shadow-lg border border-zinc-700/50' 
+                        : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
+                    }`}
+                  >
+                    <FolderGit2 size={16} />
+                    My Portfolio
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('showcase')}
+                    className={`px-6 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-2 ${
+                      activeTab === 'showcase' 
+                        ? 'bg-zinc-800 text-white shadow-lg border border-zinc-700/50' 
+                        : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
+                    }`}
+                  >
+                    <Users size={16} />
+                    Peer Showcase
+                  </button>
+                </div>
+
+                <AnimatePresence mode="wait">
+                  {activeTab === 'portfolio' && (
+                    <motion.div
+                      key="portfolio"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.2 }}
+                      className="space-y-6"
+                    >
+                      <div className="flex justify-between items-center glass p-4 rounded-2xl border border-zinc-800/50">
+                        <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                          My Uploaded Projects
+                        </h2>
+                        <Button onClick={() => handleOpenForm()}>
+                          <PlusCircle size={18} />
+                          New Project
+                        </Button>
+                      </div>
+
+                      {myProjects.length === 0 ? (
+                        <div className="text-center py-20 border border-dashed border-zinc-800 rounded-3xl bg-zinc-900/20 backdrop-blur-sm">
+                          <div className="w-16 h-16 rounded-full bg-zinc-800/50 flex items-center justify-center mx-auto mb-4 text-zinc-500">
+                            <FolderGit2 size={28} />
+                          </div>
+                          <h3 className="text-xl font-medium mb-2">No projects yet</h3>
+                          <p className="text-zinc-400 mb-6 max-w-md mx-auto">
+                            Start building your portfolio by adding your first project. Showcase your skills to the world.
+                          </p>
+                          <Button onClick={() => handleOpenForm()}>Create First Project</Button>
+                        </div>
+                      ) : (
+                        <motion.div 
+                          variants={containerVariants}
+                          initial="hidden"
+                          animate="visible"
+                          className="grid grid-cols-1 md:grid-cols-2 gap-6"
+                        >
+                          {myProjects.map((project, index) => (
+                            <ProjectCard
+                              key={project.id || project._id}
+                              project={project}
+                              index={index}
+                              isOwner={true}
+                              showStatusBadge={true}
+                              onEdit={handleOpenForm}
+                              onDelete={(id) => {
+                                setMyProjects(prev => prev.filter(p => p.id !== id));
+                              }}
+                              hoverBorderClass="hover:border-indigo-500/30"
+                              hoverTextClass="group-hover:text-indigo-400"
+                              variants={itemVariants}
+                            />
+                          ))}
+                        </motion.div>
+                      )}
+                    </motion.div>
+                  )}
+
+                  {activeTab === 'showcase' && (
+                    <motion.div
+                      key="showcase"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.2 }}
+                      className="space-y-6"
+                    >
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 glass p-4 rounded-2xl border border-zinc-800/50">
+                        <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                          Discover Peer Projects
+                        </h2>
+                        
+                        <div className="relative w-full sm:w-72">
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Search size={16} className="text-zinc-500" />
+                          </div>
+                          <input
+                            type="text"
+                            placeholder="Search projects or skills..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none transition-all text-sm text-zinc-100"
+                          />
+                        </div>
+                      </div>
+
+                      {filteredPeerProjects.length === 0 ? (
+                        <div className="text-center py-20">
+                          <p className="text-zinc-500">No public projects found matching your search.</p>
+                        </div>
+                      ) : (
+                        <motion.div 
+                          variants={containerVariants}
+                          initial="hidden"
+                          animate="visible"
+                          className="grid grid-cols-1 md:grid-cols-2 gap-6"
+                        >
+                          {filteredPeerProjects.map((project, index) => (
+                            <ProjectCard
+                              key={project.id || project._id}
+                              project={project}
+                              index={index}
+                              isOwner={false}
+                              showAuthorBadge={true}
+                              hoverBorderClass="hover:border-purple-500/30"
+                              hoverTextClass="group-hover:text-purple-400"
+                              variants={itemVariants}
+                            />
+                          ))}
+                        </motion.div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Right Column: Activity Feed / Notifications & Stats */}
+              <div className="lg:col-span-4 xl:col-span-3">
+                <motion.div 
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="glass rounded-3xl border border-zinc-800/50 p-6 sticky top-28 shadow-2xl space-y-6"
+                >
+                  {/* Activity Feed Header */}
+                  <div>
+                    <h3 className="font-bold text-white flex items-center gap-2 mb-4">
+                      <div className="relative">
+                        <Bell className="w-5 h-5 text-zinc-400" />
+                        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-zinc-900"></span>
+                      </div>
+                      Activity Feed
+                    </h3>
+
+                    <div className="space-y-4">
+                      {STUDENT_MOCK_NOTIFICATIONS.map((notif, index) => (
+                        <motion.div 
+                          key={notif.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                          className="relative pl-6 pb-4 border-l border-zinc-800 last:border-0 last:pb-0 group"
+                        >
+                          {/* Timeline dot */}
+                          <div className="absolute -left-1.25 top-1.5 w-2.5 h-2.5 rounded-full bg-zinc-700 ring-4 ring-zinc-900/50 group-hover:bg-indigo-400 transition-colors"></div>
+                          
+                          <p className="text-sm text-zinc-300 leading-snug mb-1">
+                            {notif.message}
+                          </p>
+                          <span className="text-xs text-zinc-600 font-medium block">
+                            {notif.time}
+                          </span>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Stats Section */}
+                  <div className="pt-6 border-t border-zinc-800/50">
+                    <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-4">Your Stats</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-zinc-900/50 rounded-2xl p-3 border border-zinc-800/50">
+                        <div className="text-2xl font-bold text-white mb-1">{myProjects.length}</div>
+                        <div className="text-xs text-zinc-400 font-medium">Uploaded</div>
+                      </div>
+                      <div className="bg-zinc-900/50 rounded-2xl p-3 border border-zinc-800/50">
+                        <div className="text-2xl font-bold text-white mb-1">
+                          {myProjects.filter(p => p.isPublic || p.status === 'Public').length}
+                        </div>
+                        <div className="text-xs text-zinc-400 font-medium">Public</div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            </div>
           )}
-        </AnimatePresence>
+        </div>
       </div>
-    </div>
     </>
   );
 };

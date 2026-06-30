@@ -5,6 +5,7 @@ import { Search, Mail, User, Check, Trash2, Clock, Send, Shield, UserCheck, Eye,
 import Navbar from '../components/Navbar';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
+import { useAuth } from '../context/AuthContext';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('projects');
@@ -28,8 +29,7 @@ const AdminDashboard = () => {
   const [inviteStatusFilter, setInviteStatusFilter] = useState('');
   const [inviteRoleFilter, setInviteRoleFilter] = useState('');
 
-  const token = localStorage.getItem('token');
-  const loggedInUser = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null;
+  const { token, user: loggedInUser } = useAuth();
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
   useEffect(() => {
@@ -275,7 +275,7 @@ const AdminDashboard = () => {
       <>
         <Navbar />
         <div className="min-h-screen pt-32 pb-12 px-6 flex items-center justify-center relative overflow-hidden">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-red-600/5 rounded-full blur-[120px] pointer-events-none" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-200 h-200 bg-red-600/5 rounded-full blur-[120px] pointer-events-none" />
           <div className="max-w-md w-full text-center relative z-10">
             <Card className="border-red-900/30">
               <ShieldAlert className="w-16 h-16 text-red-500 mx-auto mb-4" />
@@ -297,19 +297,29 @@ const AdminDashboard = () => {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen pt-24 pb-12 px-6 lg:px-12 max-w-7xl mx-auto">
+      <div className="min-h-screen bg-background text-zinc-100 pt-24 pb-12 px-6 md:px-12 relative overflow-hidden">
+        {/* Background decoration */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-200 h-200 bg-indigo-600/5 rounded-full blur-[120px] pointer-events-none" />
+        <div className="max-w-7xl mx-auto relative z-10">
         
         {/* Header Title */}
-        <div className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent flex items-center gap-2">
-              <Shield className="w-8 h-8 text-indigo-400" /> Admin Dashboard
-            </h1>
-            <p className="text-zinc-400 mt-1">Manage project approvals, users, and invite portal members.</p>
+        <div className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div className="flex items-center gap-3.5">
+            <div className="bg-indigo-500/20 p-2.5 rounded-xl border border-indigo-500/30 shrink-0">
+              <Shield className="w-6 h-6 text-indigo-400" />
+            </div>
+            <div>
+              <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">
+                Admin <span className="text-transparent bg-clip-text bg-linear-to-r from-indigo-400 to-purple-400">Dashboard</span>
+              </h1>
+              <p className="text-zinc-400 text-sm mt-1">
+                Manage project approvals, users, and invite portal members.
+              </p>
+            </div>
           </div>
           <button 
             onClick={fetchData} 
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-700 transition-colors text-sm font-medium"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} /> Refresh
           </button>
@@ -319,13 +329,13 @@ const AdminDashboard = () => {
         <AnimatePresence>
           {errorMsg && (
             <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mb-6 p-4 rounded-xl bg-red-900/20 border border-red-800/50 text-red-400 flex items-center gap-3">
-              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <AlertCircle className="w-5 h-5 shrink-0" />
               <span>{errorMsg}</span>
             </motion.div>
           )}
           {successMsg && (
             <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mb-6 p-4 rounded-xl bg-emerald-900/20 border border-emerald-800/50 text-emerald-400 flex items-center gap-3">
-              <Check className="w-5 h-5 flex-shrink-0" />
+              <Check className="w-5 h-5 shrink-0" />
               <div className="flex-1">
                 <p>{successMsg}</p>
                 {lastEmailPreview && (
@@ -408,7 +418,7 @@ const AdminDashboard = () => {
                             className="w-full lg:w-48 h-32 object-cover rounded-xl"
                           />
                         ) : (
-                          <div className="w-full lg:w-48 h-32 rounded-xl bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-zinc-800 flex items-center justify-center text-zinc-600 font-semibold">
+                          <div className="w-full lg:w-48 h-32 rounded-xl bg-linear-to-r from-indigo-500/20 to-purple-500/20 border border-zinc-800 flex items-center justify-center text-zinc-600 font-semibold">
                             No Cover
                           </div>
                         )}
@@ -445,7 +455,7 @@ const AdminDashboard = () => {
                             <Button 
                               onClick={() => handlePublishProject(project.id)}
                               variant="primary"
-                              className="px-6 py-2.5 text-sm !rounded-xl"
+                              className="px-6 py-2.5 text-sm rounded-xl!"
                             >
                               <Check className="w-4 h-4" /> Publish / Make Public
                             </Button>
@@ -453,7 +463,7 @@ const AdminDashboard = () => {
                               <a href={project.demoUrl} target="_blank" rel="noopener noreferrer">
                                 <Button 
                                   variant="secondary"
-                                  className="px-6 py-2.5 text-sm !rounded-xl"
+                                  className="px-6 py-2.5 text-sm rounded-xl!"
                                 >
                                   <Eye className="w-4 h-4" /> View Live Demo
                                 </Button>
@@ -666,7 +676,7 @@ const AdminDashboard = () => {
                           type="submit"
                           disabled={inviteLoading}
                           fullWidth
-                          className="mt-6 py-3 text-sm !rounded-xl font-semibold flex items-center justify-center gap-2"
+                          className="mt-6 py-3 text-sm rounded-xl! font-semibold flex items-center justify-center gap-2"
                         >
                           {inviteLoading ? (
                             <RefreshCw className="w-4 h-4 animate-spin" />
@@ -805,6 +815,7 @@ const AdminDashboard = () => {
 
         </div>
       </div>
+    </div>
     </>
   );
 };

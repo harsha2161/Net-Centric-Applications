@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, ExternalLink, Heart, Users, Bell, UserPlus, UserMinus, CheckCircle2, ChevronRight, LayoutDashboard } from 'lucide-react';
 import Navbar from '../components/Navbar';
+import ProjectCard from '../components/ProjectCard';
 
 // Mock Data
 const MOCK_STUDENTS = [
@@ -124,6 +125,8 @@ const RecruiterDashboard = () => {
         return true; // Simplified feed search for now
     });
 
+    const likedProjectsList = MOCK_PROJECTS.filter(project => likedProjects.includes(project.id));
+
     const filteredStudents = MOCK_STUDENTS.filter(student => {
         const query = searchQuery.toLowerCase();
         return (
@@ -144,32 +147,38 @@ const RecruiterDashboard = () => {
     };
 
     return (
-        <div className="min-h-screen bg-background">
+        <>
             <Navbar />
-            
-            <div className="pt-24 pb-12 px-4 sm:px-6 lg:px-8 max-w-[1400px] mx-auto">
-                {/* Header */}
+            <div className="min-h-screen bg-background text-zinc-100 pt-24 pb-12 px-6 md:px-12 relative overflow-hidden">
+                {/* Background decoration */}
+                <div className="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-emerald-600/5 blur-[120px] pointer-events-none" />
+                <div className="fixed bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-cyan-600/5 blur-[120px] pointer-events-none" />
+
+                <div className="max-w-7xl mx-auto relative z-10">
+                    {/* Header */}
                 <div className="mb-10">
-                    <motion.div 
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="flex items-center gap-3 mb-2"
-                    >
-                        <div className="bg-emerald-500/20 p-2.5 rounded-xl border border-emerald-500/30">
-                            <LayoutDashboard className="w-6 h-6 text-emerald-400" />
+                    <div className="flex items-start gap-3.5">
+                        <div className="bg-indigo-500/20 p-2.5 rounded-xl border border-indigo-500/30 shrink-0 mt-1">
+                            <LayoutDashboard className="w-6 h-6 text-indigo-400" />
                         </div>
-                        <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight">
-                            Recruiter <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Dashboard</span>
-                        </h1>
-                    </motion.div>
-                    <motion.p 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.1 }}
-                        className="text-zinc-400 max-w-2xl text-lg"
-                    >
-                        Discover top talent, track their latest projects, and connect with promising student developers.
-                    </motion.p>
+                        <div>
+                            <motion.h1 
+                                initial={{ opacity: 0, y: -20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="text-3xl md:text-4xl font-extrabold text-white tracking-tight"
+                            >
+                                Recruiter <span className="text-transparent bg-clip-text bg-linear-to-r from-indigo-400 to-purple-400">Dashboard</span>
+                            </motion.h1>
+                            <motion.p 
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.1 }}
+                                className="text-zinc-400 max-w-2xl text-sm md:text-base mt-1"
+                            >
+                                Discover top talent, track their latest projects, and connect with promising student developers.
+                            </motion.p>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -197,11 +206,21 @@ const RecruiterDashboard = () => {
                             >
                                 <Users className="w-4 h-4" /> Student Directory
                             </button>
+                            <button
+                                onClick={() => setActiveTab('liked')}
+                                className={`px-6 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-2 ${
+                                    activeTab === 'liked'
+                                        ? 'bg-zinc-800 text-white shadow-lg border border-zinc-700/50'
+                                        : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
+                                }`}
+                            >
+                                <Heart className="w-4 h-4" /> Liked Projects
+                            </button>
                         </div>
 
                         {/* Tab Content */}
                         <AnimatePresence mode="wait">
-                            {activeTab === 'feed' ? (
+                            {activeTab === 'feed' && (
                                 <motion.div
                                     key="feed"
                                     initial={{ opacity: 0, y: 10 }}
@@ -229,87 +248,7 @@ const RecruiterDashboard = () => {
                                         </label>
                                     </div>
 
-                                    <motion.div 
-                                        variants={containerVariants}
-                                        initial="hidden"
-                                        animate="visible"
-                                        className="grid grid-cols-1 md:grid-cols-2 gap-6"
-                                    >
-                                        {filteredProjects.map((project, index) => {
-                                            const gradient = gradients[index % gradients.length];
-                                            const isLiked = likedProjects.includes(project.id);
-
-                                            return (
-                                                <motion.div
-                                                    key={project.id}
-                                                    variants={itemVariants}
-                                                    className="group glass border border-zinc-800/50 rounded-3xl overflow-hidden hover:border-emerald-500/30 transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.4)] flex flex-col relative"
-                                                >
-                                                    <div className="relative h-48 w-full overflow-hidden shrink-0 bg-zinc-900">
-                                                        <div className={`absolute inset-0 bg-gradient-to-br ${gradient} mix-blend-overlay z-10 opacity-60 group-hover:opacity-40 transition-opacity`}></div>
-                                                        {project.coverImage ? (
-                                                            <img src={project.coverImage} alt={project.title} className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" />
-                                                        ) : (
-                                                            <div className="w-full h-full flex items-center justify-center border-b border-zinc-800/50">
-                                                                <span className="text-zinc-600 font-medium">No Cover Image</span>
-                                                            </div>
-                                                        )}
-                                                        {/* Like Button overlay */}
-                                                        <button 
-                                                            onClick={() => toggleLike(project.id)}
-                                                            className="absolute top-4 right-4 z-20 p-2.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 hover:bg-black/60 transition-all group/btn shadow-xl"
-                                                        >
-                                                            <Heart className={`w-5 h-5 transition-colors ${isLiked ? 'fill-rose-500 text-rose-500' : 'text-white/80 group-hover/btn:text-rose-400'}`} />
-                                                        </button>
-                                                    </div>
-
-                                                    <div className="p-6 flex flex-col flex-1">
-                                                        <div className="flex justify-between items-start mb-3">
-                                                            <h3 className="text-xl font-bold text-white group-hover:text-emerald-400 transition-colors line-clamp-1 pr-4">
-                                                                {project.title}
-                                                            </h3>
-                                                            {project.demoUrl && (
-                                                                <a href={project.demoUrl} className="text-zinc-500 hover:text-emerald-400 transition-colors shrink-0">
-                                                                    <ExternalLink className="w-5 h-5" />
-                                                                </a>
-                                                            )}
-                                                        </div>
-
-                                                        <p className="text-zinc-400 text-sm line-clamp-2 mb-4 flex-1">
-                                                            {project.description}
-                                                        </p>
-
-                                                        <div className="flex flex-wrap gap-2 mb-5">
-                                                            {project.technologiesUsed.slice(0,3).map(tech => (
-                                                                <span key={tech} className="text-xs px-2.5 py-1 rounded-md bg-zinc-800/50 text-zinc-300 border border-zinc-700/50">
-                                                                    {tech}
-                                                                </span>
-                                                            ))}
-                                                            {project.technologiesUsed.length > 3 && (
-                                                                <span className="text-xs px-2.5 py-1 rounded-md bg-zinc-800/50 text-zinc-500 border border-zinc-700/50">
-                                                                    +{project.technologiesUsed.length - 3}
-                                                                </span>
-                                                            )}
-                                                        </div>
-
-                                                        <div className="flex items-center justify-between pt-4 border-t border-zinc-800/50 mt-auto">
-                                                            <div className="flex items-center gap-3">
-                                                                <img src={project.studentId.avatar} alt={project.studentId.name} className="w-8 h-8 rounded-full ring-2 ring-zinc-900 object-cover" />
-                                                                <span className="text-sm font-medium text-zinc-300">{project.studentId.name}</span>
-                                                            </div>
-                                                            {followedStudents.includes(project.studentId.id) && (
-                                                                <span className="flex items-center gap-1 text-xs font-medium text-emerald-400/80 bg-emerald-400/10 px-2 py-1 rounded-md border border-emerald-400/20">
-                                                                    <CheckCircle2 className="w-3 h-3" /> Followed
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </motion.div>
-                                            )
-                                        })}
-                                    </motion.div>
-                                    
-                                    {filteredProjects.length === 0 && (
+                                    {filteredProjects.length === 0 ? (
                                         <div className="text-center py-20 glass rounded-3xl border border-zinc-800/50">
                                             <div className="w-20 h-20 bg-zinc-900 rounded-full flex items-center justify-center mx-auto mb-4 border border-zinc-800">
                                                 <LayoutDashboard className="w-8 h-8 text-zinc-600" />
@@ -317,9 +256,33 @@ const RecruiterDashboard = () => {
                                             <h3 className="text-lg font-semibold text-white mb-1">No projects found</h3>
                                             <p className="text-zinc-400">Try unfollowing students or wait for new uploads.</p>
                                         </div>
+                                    ) : (
+                                        <motion.div 
+                                            variants={containerVariants}
+                                            initial="hidden"
+                                            animate="visible"
+                                            className="grid grid-cols-1 md:grid-cols-2 gap-6"
+                                        >
+                                            {filteredProjects.map((project, index) => (
+                                                <ProjectCard
+                                                    key={project.id}
+                                                    project={project}
+                                                    index={index}
+                                                    showLikeButton={true}
+                                                    isLiked={likedProjects.includes(project.id)}
+                                                    onLike={toggleLike}
+                                                    showAuthorFooter={true}
+                                                    hoverBorderClass="hover:border-emerald-500/30"
+                                                    hoverTextClass="group-hover:text-emerald-400"
+                                                    variants={itemVariants}
+                                                />
+                                            ))}
+                                        </motion.div>
                                     )}
                                 </motion.div>
-                            ) : (
+                            )}
+
+                            {activeTab === 'directory' && (
                                 <motion.div
                                     key="directory"
                                     initial={{ opacity: 0, y: 10 }}
@@ -411,6 +374,55 @@ const RecruiterDashboard = () => {
                                     )}
                                 </motion.div>
                             )}
+
+                            {activeTab === 'liked' && (
+                                <motion.div
+                                    key="liked"
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="space-y-6"
+                                >
+                                    <div className="flex items-center justify-between glass p-4 rounded-2xl border border-zinc-800/50">
+                                        <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                                            My Liked Projects
+                                        </h2>
+                                    </div>
+
+                                    {likedProjectsList.length === 0 ? (
+                                        <div className="text-center py-20 glass rounded-3xl border border-zinc-800/50">
+                                            <div className="w-20 h-20 bg-zinc-900 rounded-full flex items-center justify-center mx-auto mb-4 border border-zinc-800">
+                                                <Heart className="w-8 h-8 text-zinc-600" />
+                                            </div>
+                                            <h3 className="text-lg font-semibold text-white mb-1">No liked projects</h3>
+                                            <p className="text-zinc-400">Projects you like will appear here.</p>
+                                        </div>
+                                    ) : (
+                                        <motion.div 
+                                            variants={containerVariants}
+                                            initial="hidden"
+                                            animate="visible"
+                                            className="grid grid-cols-1 md:grid-cols-2 gap-6"
+                                        >
+                                            {likedProjectsList.map((project, index) => (
+                                                <ProjectCard
+                                                    key={project.id}
+                                                    project={project}
+                                                    index={index}
+                                                    showLikeButton={true}
+                                                    isLiked={true}
+                                                    onLike={toggleLike}
+                                                    showAuthorFooter={true}
+                                                    hoverBorderClass="hover:border-emerald-500/30"
+                                                    hoverTextClass="group-hover:text-emerald-400"
+                                                    variants={itemVariants}
+                                                />
+                                            ))}
+                                        </motion.div>
+                                    )}
+                                </motion.div>
+                            )}
                         </AnimatePresence>
                     </div>
 
@@ -441,7 +453,7 @@ const RecruiterDashboard = () => {
                                         className="relative pl-6 pb-4 border-l border-zinc-800 last:border-0 last:pb-0 group"
                                     >
                                         {/* Timeline dot */}
-                                        <div className="absolute left-[-5px] top-1.5 w-2.5 h-2.5 rounded-full bg-zinc-700 ring-4 ring-zinc-900/50 group-hover:bg-emerald-400 transition-colors"></div>
+                                        <div className="absolute -left-1.25 top-1.5 w-2.5 h-2.5 rounded-full bg-zinc-700 ring-4 ring-zinc-900/50 group-hover:bg-emerald-400 transition-colors"></div>
                                         
                                         <p className="text-sm text-zinc-300 leading-snug mb-1">
                                             {notif.message}
@@ -471,6 +483,7 @@ const RecruiterDashboard = () => {
                 </div>
             </div>
         </div>
+        </>
     );
 };
 

@@ -51,11 +51,9 @@ class AuthService {
   async processUserRegistration({ googleId, name, email, profilePicture, inviteToken, mockRole }) {
     let user = await User.findOne({ email });
     if (user) {
-      // Existing user login: allow without inviteToken validation, or validate if passed
+      // If inviteToken is passed but user already exists, they are trying to register with a used account
       if (inviteToken) {
-        this.validateInvite(inviteToken);
-        const Invitation = require('../models/Invitation');
-        await Invitation.findOneAndUpdate({ token: inviteToken }, { status: 'Completed' });
+        throw new Error('This Google account is already registered. Please log in or use a different Google account to register.');
       }
       if (mockRole) {
         user.role = mockRole;
@@ -76,7 +74,7 @@ class AuthService {
     } else if (mockRole) {
       role = mockRole;
     } else {
-      throw new Error('An invitation token is required for registration');
+      throw new Error('Account not found. You must be invited by an Administrator to register.');
     }
 
     user = await User.create({

@@ -29,36 +29,39 @@ const getInvitations = async (req, res) => {
   }
 };
 
-const initiateGoogleAuth = async (req, res) => {
-  try {
-    const { inviteToken } = req.query;
-    if (!inviteToken) {
-      return res.status(400).json({ message: 'Missing required inviteToken query parameter' });
-    }
-    authService.validateInvite(inviteToken);
-    return res.status(200).json({
-      message: 'Invite token verified. Ready for OAuth redirect.',
-      inviteToken,
-      oauthUrl: `/api/auth/google/callback?inviteToken=${inviteToken}`
-    });
-  } catch (error) {
-    return res.status(400).json({ message: error.message });
-  }
-};
+const axios = require('axios');
 
-const handleGoogleCallback = async (req, res) => {
+const googleAuth = async (req, res) => {
   try {
-    const { inviteToken, mockName, mockEmail, mockGoogleId, mockRole } = req.query;
+    const { idToken, inviteToken } = req.body;
+    if (!idToken) {
+      return res.status(400).json({ message: 'Google ID Token is required' });
+    }
+
+    // Verify token with Google's tokeninfo API
+    let payload;
+    try {
+      const response = await axios.get(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`);
+      payload = response.data;
+      
+      // Verify audience matches our Client ID
+      if (payload.aud !== process.env.GOOGLE_CLIENT_ID) {
+        return res.status(400).json({ message: 'Google ID token validation failed: Audience mismatch' });
+      }
+    } catch (err) {
+      console.error('Google Token Validation Error:', err.message);
+      return res.status(400).json({ message: 'Invalid or expired Google ID token' });
+    }
 
     const userData = {
-      googleId: mockGoogleId || req.user?.googleId || `google-id-${Date.now()}`,
-      name: mockName || req.user?.name || 'Test User',
-      email: mockEmail || req.user?.email || `user${Date.now()}@university.edu`,
-      profilePicture: req.user?.profilePicture || '',
-      inviteToken,
-      mockRole
+      googleId: payload.sub,
+      name: payload.name,
+      email: payload.email,
+      profilePicture: payload.picture || '',
+      inviteToken
     };
 
+    // processUserRegistration returns user and token
     const { user, authToken } = await authService.processUserRegistration(userData);
 
     return res.status(200).json({
@@ -67,6 +70,7 @@ const handleGoogleCallback = async (req, res) => {
       user
     });
   } catch (error) {
+    console.error('Google Auth Controller Error:', error.message);
     return res.status(400).json({ message: error.message });
   }
 };
@@ -91,6 +95,5 @@ module.exports = {
   generateInvite,
   generateBulkInvites,
   getInvitations,
-  initiateGoogleAuth,
-  handleGoogleCallback
+  googleAuth
 };

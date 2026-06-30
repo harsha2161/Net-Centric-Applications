@@ -7,6 +7,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import RecruiterDashboard from './pages/RecruiterDashboard';
 import StudentsDashbourd from './pages/StudentsDashbourd';
 import ProjectDetail from './pages/ProjectDetail';
+import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   return (
@@ -17,9 +18,31 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/projects" element={<BrowseProjects/>} />
         <Route path="/projects/:id" element={<ProjectDetail />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/recruiter" element={<RecruiterDashboard />} />
-        <Route path="/studentsdashbourd" element={<StudentsDashbourd/>} />
+        
+        <Route 
+          path="/admin" 
+          element={
+            <ProtectedRoute allowedRoles={['Admin']}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/recruiter" 
+          element={
+            <ProtectedRoute allowedRoles={['Recruiter']}>
+              <RecruiterDashboard />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/studentsdashbourd" 
+          element={
+            <ProtectedRoute allowedRoles={['Student']}>
+              <StudentsDashbourd />
+            </ProtectedRoute>
+          } 
+        />
       </Routes>
     </Router>
   );

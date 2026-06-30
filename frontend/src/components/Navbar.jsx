@@ -3,25 +3,33 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
+import { useAuth } from '../context/AuthContext';
+import { AnimatePresence } from 'framer-motion';
+
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const navigate = useNavigate();
-  const token = localStorage.getItem('token');
-  const user = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null;
+  const { token, user, logout } = useAuth();
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+  const handleLogoutClick = () => {
+    setIsConfirmOpen(true);
+  };
+
+  const confirmLogout = () => {
+    logout();
+    setIsConfirmOpen(false);
     navigate('/login');
   };
 
   return (
-    <motion.nav 
-      initial={{ y: -100, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.8, ease: [0.25, 0.4, 0.25, 1] }}
-      className="fixed top-0 w-full z-50 glass px-6 py-4"
-    >
+    <>
+      <motion.nav 
+        initial={{ y: -100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.8, ease: [0.25, 0.4, 0.25, 1] }}
+        className="fixed top-0 w-full z-50 glass px-6 py-4"
+      >
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2 cursor-pointer">
           <div className="bg-indigo-500/20 p-2 rounded-xl">
@@ -53,7 +61,7 @@ const Navbar = () => {
                 Hi, <strong className="text-zinc-200">{user?.name}</strong> ({user?.role})
               </span>
               <button 
-                onClick={handleLogout}
+                onClick={handleLogoutClick}
                 className="flex items-center gap-1.5 text-sm font-medium text-red-400 hover:text-red-350 transition-colors cursor-pointer bg-zinc-900 border border-zinc-800 hover:border-red-950 px-3 py-1.5 rounded-full"
               >
                 <LogOut className="w-4 h-4" /> Log out
@@ -103,7 +111,7 @@ const Navbar = () => {
               <span className="text-sm text-zinc-400">Logged in as {user?.name} ({user?.role})</span>
               <button 
                 onClick={() => {
-                  handleLogout();
+                  handleLogoutClick();
                   setIsOpen(false);
                 }}
                 className="flex items-center gap-1.5 text-sm font-medium text-red-400 text-left"
@@ -121,7 +129,44 @@ const Navbar = () => {
           )}
         </motion.div>
       )}
-    </motion.nav>
+      </motion.nav>
+
+      {/* Logout Confirmation Modal */}
+      <AnimatePresence>
+        {isConfirmOpen && (
+          <div className="fixed inset-0 z-[200] bg-black/70 backdrop-blur-md flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-[#121214] border border-zinc-800/80 rounded-2xl p-6 max-w-sm w-full shadow-2xl relative"
+            >
+              <div className="flex items-center gap-3 text-red-400 mb-3">
+                <LogOut className="w-6 h-6" />
+                <h3 className="text-lg font-bold text-white">Sign Out?</h3>
+              </div>
+              <p className="text-zinc-400 text-sm mb-6 leading-relaxed">
+                Are you sure you want to log out of your session? You will need to sign in again to access your dashboard.
+              </p>
+              <div className="flex justify-end gap-3">
+                <button 
+                  onClick={() => setIsConfirmOpen(false)}
+                  className="px-4 py-2 text-sm font-medium text-zinc-400 hover:text-white transition-colors bg-zinc-900 border border-zinc-800 rounded-xl cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={confirmLogout}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-500 rounded-xl transition-colors cursor-pointer"
+                >
+                  Yes, Log out
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </>
   );
 };
 

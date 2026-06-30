@@ -1,58 +1,100 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { BookOpen, KeyRound, Mail, User, AlertCircle, RefreshCw } from 'lucide-react';
+import { BookOpen, KeyRound, AlertCircle, Loader2 } from 'lucide-react';
 import Card from '../components/ui/Card';
-import Button from '../components/ui/Button';
+import { loginWithGoogleIdToken } from '../services/authService';
+import { useAuth } from '../context/AuthContext';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [tokenInput, setTokenInput] = useState('');
-  const [nameInput, setNameInput] = useState('');
-  const [emailInput, setEmailInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  
+  const tokenInputRef = useRef(tokenInput);
 
-  // Extract inviteToken from query string if available
-  useState(() => {
+  useEffect(() => {
+    tokenInputRef.current = tokenInput;
+  }, [tokenInput]);
+
+  // Extract inviteToken from query string if available, store in session, and hide from URL
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get('inviteToken');
     if (token) {
+      sessionStorage.setItem('inviteToken', token);
       setTokenInput(token);
+      tokenInputRef.current = token;
+      // Clean query parameters from address bar to hide inviteToken
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else {
+      const savedToken = sessionStorage.getItem('inviteToken');
+      if (savedToken) {
+        setTokenInput(savedToken);
+        tokenInputRef.current = savedToken;
+      }
     }
-  });
 
-  const handleRegister = async (e) => {
-    e.preventDefault();
-    if (!tokenInput || !nameInput || !emailInput) {
-      setErrorMsg('All fields are required');
-      return;
+    // Load Google Identity Services client script
+    if (!document.getElementById('google-gsi-client')) {
+      const script = document.createElement('script');
+      script.id = 'google-gsi-client';
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      document.body.appendChild(script);
+      script.onload = () => {
+        initializeGoogleSignUp();
+      };
+    } else {
+      initializeGoogleSignUp();
     }
+  }, []);
+
+  const initializeGoogleSignUp = () => {
+    /* global google */
+    if (window.google) {
+      window.google.accounts.id.initialize({
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || '630315576296-6tg1bknfkv7dkn9sgk1n7pb3k988ccnl.apps.googleusercontent.com',
+        callback: handleGoogleAuthCallback
+      });
+      
+      window.google.accounts.id.renderButton(
+        document.getElementById('google-signup-button'),
+        { theme: 'filled_blue', size: 'large', width: 384, text: 'signup_with', shape: 'pill' }
+      );
+    }
+  };
+
+  const handleGoogleAuthCallback = async (response) => {
     setIsLoading(true);
     setErrorMsg('');
-
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+    const currentToken = tokenInputRef.current || sessionStorage.getItem('inviteToken') || '';
+    if (!currentToken) {
+      setErrorMsg('University invite token is required before registering with Google. Please paste it above.');
+      setIsLoading(false);
+      return;
+    }
     try {
-      const res = await axios.get(`${backendUrl}/api/auth/google/callback`, {
-        params: {
-          inviteToken: tokenInput,
-          mockEmail: emailInput,
-          mockName: nameInput,
-          mockGoogleId: `mock-google-reg-${Date.now()}`
-        }
-      });
+      const data = await loginWithGoogleIdToken(response.credential, currentToken);
+      login(data.token, data.user);
+      
+      // Clear token from sessionStorage on successful registration
+      sessionStorage.removeItem('inviteToken');
 
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('user', JSON.stringify(res.data.user));
-
-      if (res.data.user?.role === 'Admin') {
+      if (data.user?.role === 'Admin') {
         navigate('/admin');
+      } else if (data.user?.role === 'Student') {
+        navigate('/studentsdashbourd');
+      } else if (data.user?.role === 'Recruiter') {
+        navigate('/recruiter');
       } else {
         navigate('/projects');
       }
     } catch (err) {
-      console.error(err);
-      setErrorMsg(err.response?.data?.message || 'Registration failed. Check your token.');
+      console.error('Google Auth Registration Error:', err);
+      setErrorMsg(err.response?.data?.message || err.message || 'Registration failed');
     } finally {
       setIsLoading(false);
     }
@@ -86,7 +128,7 @@ const RegisterPage = () => {
             </div>
           )}
 
-          <form onSubmit={handleRegister} className="space-y-4">
+          <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-zinc-300 mb-2">
                 University Invite Token <span className="text-red-400">*</span>
@@ -106,58 +148,22 @@ const RegisterPage = () => {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-2">
-                Full Name <span className="text-red-400">*</span>
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User className="h-5 w-5 text-zinc-500" />
-                </div>
-                <input
-                  type="text"
-                  className="block w-full pl-10 pr-3 py-3 border border-zinc-700 rounded-xl bg-zinc-900/50 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                  placeholder="e.g. John Doe"
-                  value={nameInput}
-                  onChange={(e) => setNameInput(e.target.value)}
-                  required
-                />
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center py-6 space-y-3">
+                <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+                <p className="text-sm text-zinc-400">Registering account...</p>
               </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-2">
-                Email Address <span className="text-red-400">*</span>
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-zinc-500" />
+            ) : (
+              <div className="w-full flex flex-col items-center space-y-3 pt-4">
+                <div className="w-full flex justify-center relative z-20">
+                  <div id="google-signup-button"></div>
                 </div>
-                <input
-                  type="email"
-                  className="block w-full pl-10 pr-3 py-3 border border-zinc-700 rounded-xl bg-zinc-900/50 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                  placeholder="e.g. user@university.edu"
-                  value={emailInput}
-                  onChange={(e) => setEmailInput(e.target.value)}
-                  required
-                />
+                <p className="text-xs text-zinc-500 text-center">
+                  Fill in your invite token first, then continue with Google to complete registration.
+                </p>
               </div>
-            </div>
-
-            <Button 
-              type="submit"
-              variant="primary" 
-              fullWidth 
-              className={`flex items-center justify-center gap-3 mt-6 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <RefreshCw className="w-5 h-5 animate-spin" />
-              ) : (
-                <>Register with Google</>
-              )}
-            </Button>
-          </form>
+            )}
+          </div>
 
           <div className="mt-8 text-center text-sm text-zinc-400">
             Already have an account?{' '}
