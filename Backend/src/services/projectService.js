@@ -1,5 +1,6 @@
 const Project = require('../models/Project');
 const eventEmitter = require('../events/emitters');
+const { uploadToCloudinary } = require('../utils/cloudinary');
 
 class ProjectService {
   async createProject(studentId, projectData, files, user) {
@@ -7,8 +8,15 @@ class ProjectService {
     let additionalImages = [];
 
     if (files) {
-      if (files.coverImage && files.coverImage.length > 0) coverImage = `/uploads/${files.coverImage[0].filename}`;
-      if (files.additionalImages && files.additionalImages.length > 0) additionalImages = files.additionalImages.map(file => `/uploads/${file.filename}`);
+      if (files.coverImage && files.coverImage.length > 0) {
+        coverImage = await uploadToCloudinary(files.coverImage[0].path, 'projects/covers');
+      }
+      if (files.additionalImages && files.additionalImages.length > 0) {
+        const uploadPromises = files.additionalImages.map(file => 
+          uploadToCloudinary(file.path, 'projects/additional')
+        );
+        additionalImages = await Promise.all(uploadPromises);
+      }
     }
 
     let technologiesUsed = projectData.technologiesUsed;
@@ -65,7 +73,7 @@ class ProjectService {
     return project;
   }
 
-  async updateProject(projectId, updateData, user) {
+  async updateProject(projectId, updateData, files, user) {
     const project = await Project.findById(projectId);
     if (!project) throw new Error('Project not found');
 
@@ -73,11 +81,48 @@ class ProjectService {
     const isAdmin = user.role === 'Admin';
     if (!isOwner && !isAdmin) throw new Error('Forbidden: Only the project owner or an admin can edit this project');
 
-    if (updateData.technologiesUsed && typeof updateData.technologiesUsed === 'string') {
-      updateData.technologiesUsed = updateData.technologiesUsed.split(',').map(t => t.trim());
+    let coverImage = project.coverImage;
+    if (files && files.coverImage && files.coverImage.length > 0) {
+      coverImage = await uploadToCloudinary(files.coverImage[0].path, 'projects/covers');
     }
 
-    Object.assign(project, updateData);
+    let additionalImages = [];
+    if (updateData.additionalImages) {
+      try {
+        additionalImages = typeof updateData.additionalImages === 'string'
+          ? JSON.parse(updateData.additionalImages)
+          : updateData.additionalImages;
+      } catch (e) {
+        additionalImages = Array.isArray(updateData.additionalImages) 
+          ? updateData.additionalImages 
+          : [updateData.additionalImages];
+      }
+    } else {
+      additionalImages = project.additionalImages || [];
+    }
+
+    if (files && files.additionalImages && files.additionalImages.length > 0) {
+      const uploadPromises = files.additionalImages.map(file => 
+        uploadToCloudinary(file.path, 'projects/additional')
+      );
+      const newUploadedImages = await Promise.all(uploadPromises);
+      additionalImages = [...additionalImages, ...newUploadedImages];
+    }
+
+    let technologiesUsed = updateData.technologiesUsed;
+    if (typeof technologiesUsed === 'string') {
+      technologiesUsed = technologiesUsed.split(',').map(t => t.trim());
+    }
+
+    project.title = updateData.title !== undefined ? updateData.title : project.title;
+    project.description = updateData.description !== undefined ? updateData.description : project.description;
+    project.technologiesUsed = technologiesUsed !== undefined ? technologiesUsed : project.technologiesUsed;
+    project.coverImage = coverImage;
+    project.additionalImages = additionalImages;
+    project.demoUrl = updateData.demoUrl !== undefined ? updateData.demoUrl : project.demoUrl;
+    project.gitRepoUrl = updateData.gitRepoUrl !== undefined ? updateData.gitRepoUrl : project.gitRepoUrl;
+    project.isPublic = updateData.isPublic !== undefined ? (updateData.isPublic === 'true' || updateData.isPublic === true) : project.isPublic;
+
     await project.save();
     return project;
   }

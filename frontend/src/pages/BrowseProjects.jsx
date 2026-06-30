@@ -5,6 +5,16 @@ import { Search, ExternalLink } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { useNavigate } from 'react-router-dom';
 
+const getFullImageUrl = (url) => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+    return url;
+  }
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+  const separator = url.startsWith('/') ? '' : '/';
+  return `${backendUrl}${separator}${url}`;
+};
+
 const demoProjects = [
     {
         id: 'demo-1',
@@ -191,7 +201,7 @@ const BrowseProjects = () => {
                                         <div className={`absolute inset-0 bg-gradient-to-br ${gradient} mix-blend-overlay z-10 opacity-60 group-hover:opacity-40 transition-opacity`}></div>
                                         {project.coverImage ? (
                                             <img
-                                                src={project.coverImage}
+                                                src={getFullImageUrl(project.coverImage)}
                                                 alt={project.title}
                                                 className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
                                             />

@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Heart, ExternalLink, Edit3, Trash2, Globe, Clock, ChevronRight, Image as ImageIcon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const defaultGradients = [
   "from-blue-500/20 to-purple-500/20",
@@ -8,6 +9,16 @@ const defaultGradients = [
   "from-orange-500/20 to-red-500/20",
   "from-indigo-500/20 to-blue-500/20",
 ];
+
+const getFullImageUrl = (url) => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+    return url;
+  }
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+  const separator = url.startsWith('/') ? '' : '/';
+  return `${backendUrl}${separator}${url}`;
+};
 
 const ProjectCard = ({
   project,
@@ -25,6 +36,7 @@ const ProjectCard = ({
   hoverTextClass = 'group-hover:text-indigo-400',
   variants
 }) => {
+  const navigate = useNavigate();
   const gradient = defaultGradients[index % defaultGradients.length];
 
   // Helper to extract student details safely
@@ -34,17 +46,22 @@ const ProjectCard = ({
   // Technologies rendering
   const techList = project.technologies || project.technologiesUsed || [];
 
+  const handleCardClick = () => {
+    navigate(`/projects/${project.id || project._id}`);
+  };
+
   return (
     <motion.div
       variants={variants}
-      className={`group glass border border-zinc-800/50 rounded-3xl overflow-hidden ${hoverBorderClass} transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.4)] flex flex-col relative`}
+      onClick={handleCardClick}
+      className={`group glass border border-zinc-800/50 rounded-3xl overflow-hidden ${hoverBorderClass} transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.4)] flex flex-col relative cursor-pointer`}
     >
       {/* ────────── TOP IMAGE / COVER ────────── */}
       <div className="relative h-48 w-full overflow-hidden shrink-0 bg-zinc-900">
         <div className={`absolute inset-0 bg-linear-to-br ${gradient} mix-blend-overlay z-10 opacity-60 group-hover:opacity-40 transition-opacity`}></div>
         {project.coverImage ? (
           <img
-            src={project.coverImage}
+            src={getFullImageUrl(project.coverImage)}
             alt={project.title}
             className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
           />
@@ -103,6 +120,7 @@ const ProjectCard = ({
               href={project.demoUrl || project.demoLink}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
               className={`text-zinc-500 ${hoverTextClass} transition-colors shrink-0`}
             >
               <ExternalLink className="w-5 h-5" />
@@ -146,6 +164,7 @@ const ProjectCard = ({
               href={project.demoUrl || project.demoLink || '#'}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
               className="text-zinc-400 hover:text-white flex items-center gap-1.5 text-sm transition-colors"
             >
               <ExternalLink size={14} /> View Demo
@@ -181,12 +200,9 @@ const ProjectCard = ({
           )}
 
           {!isOwner && !showAuthorFooter && (
-            <a
-              href={`/projects/${project.id || project._id}`}
-              className="inline-flex items-center gap-1.5 text-sm text-indigo-400 hover:text-indigo-300 font-medium transition-colors"
-            >
+            <div className="inline-flex items-center gap-1.5 text-sm text-indigo-400 group-hover:text-indigo-300 font-medium transition-colors">
               View Details <ChevronRight size={14} />
-            </a>
+            </div>
           )}
         </div>
       </div>

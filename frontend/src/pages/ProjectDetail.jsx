@@ -545,11 +545,6 @@ const ProjectDetail = () => {
             >
               <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-widest mb-4">Created by</h3>
               <div className="flex items-center gap-4">
-                <img
-                  src={authorAvatar}
-                  alt={authorName}
-                  className="w-14 h-14 rounded-2xl object-cover ring-2 ring-indigo-500/30"
-                />
                 <div className="min-w-0">
                   <p className="text-white font-semibold text-base truncate">{authorName}</p>
                   <p className="text-zinc-500 text-sm truncate">{project.studentId?.email || ''}</p>

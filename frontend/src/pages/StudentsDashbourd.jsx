@@ -76,6 +76,12 @@ const StudentsDashbourd = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
+  // File Upload states
+  const [coverImageFile, setCoverImageFile] = useState(null);
+  const [coverImagePreview, setCoverImagePreview] = useState('');
+  const [screenshotFiles, setScreenshotFiles] = useState([null, null, null, null, null]);
+  const [screenshotPreviews, setScreenshotPreviews] = useState(['', '', '', '', '']);
+
   const { token, user } = useAuth();
 
   // Animation Variants
@@ -89,11 +95,10 @@ const StudentsDashbourd = () => {
     visible: { y: 0, opacity: 1, transition: { type: "spring", stiffness: 100, damping: 15 } }
   };
 
-  useEffect(() => {
+  const fetchProjects = () => {
     setIsLoading(true);
     axios.get(import.meta.env.VITE_BACKEND_URL + "/api/projects", {
       headers: { Authorization: `Bearer ${token}` }
-
     }).then((res) => {
       const fetchedProjects = res.data.projects || [];
       const userId = user._id || user.id;
@@ -121,16 +126,19 @@ const StudentsDashbourd = () => {
         }
       });
       
-      setMyProjects(myProjs.length > 0 ? myProjs : INITIAL_MY_PROJECTS);
-      setPeerProjects(peerProjs.length > 0 ? peerProjs : INITIAL_PEER_PROJECTS);
+      setMyProjects(myProjs);
+      setPeerProjects(peerProjs);
     }).catch((err) => {
       console.error("Error fetching projects", err);
-      // Fallback to mock data on error
       setMyProjects(INITIAL_MY_PROJECTS);
       setPeerProjects(INITIAL_PEER_PROJECTS);
     }).finally(() => {
       setIsLoading(false);
     });
+  };
+
+  useEffect(() => {
+    fetchProjects();
   }, [token]);
 
   // Form State
@@ -138,9 +146,7 @@ const StudentsDashbourd = () => {
     title: '',
     description: '',
     technologies: '',
-    demoLink: '',
-    coverImage: '',
-    screenshots: ['', '', '', '', '']
+    demoLink: ''
   });
 
   const filteredPeerProjects = peerProjects.filter(project => 
@@ -152,21 +158,35 @@ const StudentsDashbourd = () => {
   const handleOpenForm = (project = null) => {
     if (project) {
       setFormData({
-        ...project,
-        technologies: project.technologies.join(', '),
-        screenshots: [...project.screenshots, ...Array(5 - project.screenshots.length).fill('')]
+        title: project.title || '',
+        description: project.description || '',
+        technologies: project.technologies ? project.technologies.join(', ') : '',
+        demoLink: project.demoLink || ''
       });
       setEditingProject(project.id);
+      
+      setCoverImageFile(null);
+      setCoverImagePreview(project.coverImage || '');
+      
+      const initialPreviews = ['', '', '', '', ''];
+      const currentScreenshots = project.screenshots || [];
+      currentScreenshots.forEach((src, idx) => {
+        if (idx < 5) initialPreviews[idx] = src;
+      });
+      setScreenshotPreviews(initialPreviews);
+      setScreenshotFiles([null, null, null, null, null]);
     } else {
       setFormData({
         title: '',
         description: '',
         technologies: '',
-        demoLink: '',
-        coverImage: '',
-        screenshots: ['', '', '', '', '']
+        demoLink: ''
       });
       setEditingProject(null);
+      setCoverImageFile(null);
+      setCoverImagePreview('');
+      setScreenshotFiles([null, null, null, null, null]);
+      setScreenshotPreviews(['', '', '', '', '']);
     }
     setIsFormOpen(true);
   };
@@ -176,25 +196,77 @@ const StudentsDashbourd = () => {
     setEditingProject(null);
   };
 
-  const handleSaveProject = (e) => {
+  const handleSaveProject = async (e) => {
     e.preventDefault();
-    
-    // Process form data
-    const newProject = {
-      ...formData,
-      id: editingProject || Date.now(),
-      technologies: formData.technologies.split(',').map(t => t.trim()).filter(Boolean),
-      screenshots: formData.screenshots.filter(Boolean),
-      status: 'Private / Pending Admin Approval' // CRITICAL LOGIC: Always resets to pending
-    };
+    setIsLoading(true);
 
-    if (editingProject) {
-      setMyProjects(prev => prev.map(p => p.id === editingProject ? newProject : p));
-    } else {
-      setMyProjects(prev => [newProject, ...prev]);
+    try {
+      const formDataObj = new FormData();
+      formDataObj.append('title', formData.title);
+      formDataObj.append('description', formData.description);
+      formDataObj.append('technologiesUsed', formData.technologies);
+      formDataObj.append('demoUrl', formData.demoLink);
+
+      // Cover image
+      if (coverImageFile) {
+        formDataObj.append('coverImage', coverImageFile);
+      } else if (coverImagePreview) {
+        formDataObj.append('coverImage', coverImagePreview);
+      }
+
+      // Screenshots
+      const keptScreenshots = [];
+      screenshotPreviews.forEach((preview, idx) => {
+        const file = screenshotFiles[idx];
+        if (file) {
+          formDataObj.append('additionalImages', file);
+        } else if (preview && (preview.startsWith('http') || preview.startsWith('/uploads'))) {
+          keptScreenshots.push(preview);
+        }
+      });
+      formDataObj.append('additionalImages', JSON.stringify(keptScreenshots));
+
+      let res;
+      if (editingProject) {
+        res = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/api/projects/${editingProject}`, formDataObj, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+      } else {
+        res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/projects`, formDataObj, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+      }
+
+      fetchProjects();
+      handleCloseForm();
+    } catch (err) {
+      console.error('Error saving project:', err);
+      alert(err.response?.data?.message || err.message || 'Failed to save project');
+    } finally {
+      setIsLoading(false);
     }
+  };
 
-    handleCloseForm();
+  const handleDeleteProject = async (projectId) => {
+    if (!window.confirm('Are you sure you want to delete this project?')) return;
+    setIsLoading(true);
+    try {
+      await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/api/projects/${projectId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchProjects();
+    } catch (err) {
+      console.error('Error deleting project:', err);
+      alert(err.response?.data?.message || err.message || 'Failed to delete project');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -310,34 +382,98 @@ const StudentsDashbourd = () => {
                     
                     <div className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium text-zinc-300 mb-1.5">Cover Image URL *</label>
-                        <input 
-                          required
-                          type="url" 
-                          value={formData.coverImage}
-                          onChange={(e) => setFormData({...formData, coverImage: e.target.value})}
-                          className="w-full px-4 py-3 bg-zinc-900/50 border border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none transition-all"
-                          placeholder="https://example.com/cover-image.jpg"
-                        />
+                        <label className="block text-sm font-medium text-zinc-300 mb-1.5">Cover Image *</label>
+                        <div className="flex flex-col md:flex-row items-center gap-4">
+                          {coverImagePreview ? (
+                            <div className="relative w-40 h-24 rounded-xl overflow-hidden border border-zinc-800 shrink-0 bg-zinc-950">
+                              <img src={coverImagePreview} alt="Cover Preview" className="w-full h-full object-cover" />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setCoverImageFile(null);
+                                  setCoverImagePreview('');
+                                }}
+                                className="absolute top-1 right-1 bg-black/70 hover:bg-black/90 p-1.5 rounded-full text-red-400 border border-white/10 transition-colors"
+                              >
+                                <X size={12} />
+                              </button>
+                            </div>
+                          ) : (
+                            <label className="w-40 h-24 border border-dashed border-zinc-700 hover:border-indigo-500 rounded-xl flex flex-col items-center justify-center cursor-pointer bg-zinc-900/50 hover:bg-zinc-900/80 transition-all shrink-0">
+                              <ImageIcon className="w-6 h-6 text-zinc-500 mb-1" />
+                              <span className="text-xs text-zinc-400">Select Cover</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files[0];
+                                  if (file) {
+                                    setCoverImageFile(file);
+                                    setCoverImagePreview(URL.createObjectURL(file));
+                                  }
+                                }}
+                              />
+                            </label>
+                          )}
+                          <div className="text-xs text-zinc-500">
+                            Recommended: High quality landscape image. Max file size: 5MB.
+                          </div>
+                        </div>
                       </div>
 
                       <div>
                         <label className="block text-sm font-medium text-zinc-300 mb-3">Additional Screenshots (Up to 5)</label>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          {formData.screenshots.map((url, index) => (
-                            <input 
-                              key={index}
-                              type="url" 
-                              value={url}
-                              onChange={(e) => {
-                                const newScreenshots = [...formData.screenshots];
-                                newScreenshots[index] = e.target.value;
-                                setFormData({...formData, screenshots: newScreenshots});
-                              }}
-                              className="w-full px-4 py-2.5 bg-zinc-900/30 border border-zinc-800/80 rounded-lg focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none transition-all text-sm"
-                              placeholder={`Screenshot URL ${index + 1}`}
-                            />
-                          ))}
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                          {[0, 1, 2, 3, 4].map((index) => {
+                            const preview = screenshotPreviews[index];
+                            return (
+                              <div key={index} className="aspect-video relative rounded-xl overflow-hidden border border-zinc-800 bg-zinc-950/50 flex items-center justify-center">
+                                {preview ? (
+                                  <>
+                                    <img src={preview} alt={`Screenshot ${index + 1}`} className="w-full h-full object-cover" />
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const newPreviews = [...screenshotPreviews];
+                                        newPreviews[index] = '';
+                                        setScreenshotPreviews(newPreviews);
+
+                                        const newFiles = [...screenshotFiles];
+                                        newFiles[index] = null;
+                                        setScreenshotFiles(newFiles);
+                                      }}
+                                      className="absolute top-1 right-1 bg-black/70 hover:bg-black/90 p-1 rounded-full text-red-400 border border-white/10 transition-colors"
+                                    >
+                                      <X size={12} />
+                                    </button>
+                                  </>
+                                ) : (
+                                  <label className="w-full h-full flex flex-col items-center justify-center cursor-pointer hover:bg-zinc-900/50 transition-colors">
+                                    <PlusCircle className="w-5 h-5 text-zinc-600 mb-1 hover:text-indigo-400 transition-colors" />
+                                    <span className="text-[10px] text-zinc-500 font-medium">Slot {index + 1}</span>
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      className="hidden"
+                                      onChange={(e) => {
+                                        const file = e.target.files[0];
+                                        if (file) {
+                                          const newPreviews = [...screenshotPreviews];
+                                          newPreviews[index] = URL.createObjectURL(file);
+                                          setScreenshotPreviews(newPreviews);
+
+                                          const newFiles = [...screenshotFiles];
+                                          newFiles[index] = file;
+                                          setScreenshotFiles(newFiles);
+                                        }
+                                      }}
+                                    />
+                                  </label>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     </div>
@@ -432,9 +568,7 @@ const StudentsDashbourd = () => {
                               isOwner={true}
                               showStatusBadge={true}
                               onEdit={handleOpenForm}
-                              onDelete={(id) => {
-                                setMyProjects(prev => prev.filter(p => p.id !== id));
-                              }}
+                              onDelete={handleDeleteProject}
                               hoverBorderClass="hover:border-indigo-500/30"
                               hoverTextClass="group-hover:text-indigo-400"
                               variants={itemVariants}

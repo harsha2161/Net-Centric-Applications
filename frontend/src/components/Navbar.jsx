@@ -17,9 +17,11 @@ const Navbar = () => {
   };
 
   const confirmLogout = () => {
-    logout();
     setIsConfirmOpen(false);
-    navigate('/login');
+    navigate('/');
+    setTimeout(() => {
+      logout();
+    }, 0);
   };
 
   return (
@@ -30,7 +32,7 @@ const Navbar = () => {
         transition={{ duration: 0.8, ease: [0.25, 0.4, 0.25, 1] }}
         className="fixed top-0 w-full z-50 glass px-6 py-4"
       >
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
+      <div className="max-w-7xl mx-auto flex items-center justify-between relative">
         <Link to="/" className="flex items-center gap-2 cursor-pointer">
           <div className="bg-indigo-500/20 p-2 rounded-xl">
             <BookOpen className="w-5 h-5 text-indigo-400" />
@@ -40,8 +42,10 @@ const Navbar = () => {
           </span>
         </Link>
 
-        <div className="hidden md:flex items-center space-x-8">
-          <Link to="/projects" className="text-sm text-zinc-400 hover:text-white transition-colors animate-fade-in">Browse Projects</Link>
+        <div className="hidden md:flex items-center space-x-8 absolute left-1/2 -translate-x-1/2">
+          {!token && (
+            <Link to="/projects" className="text-sm text-zinc-400 hover:text-white transition-colors animate-fade-in">Browse Projects</Link>
+          )}
           {user?.role === 'Admin' && (
             <Link to="/admin" className="text-sm text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1.5 transition-colors">
               <Shield className="w-4 h-4 animate-pulse" /> Admin Dashboard
@@ -50,6 +54,11 @@ const Navbar = () => {
           {user?.role === 'Recruiter' && (
             <Link to="/recruiter" className="text-sm text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1.5 transition-colors">
               <BookOpen className="w-4 h-4" /> Recruiter Dashboard
+            </Link>
+          )}
+          {user?.role === 'Student' && (
+            <Link to="/studentsdashbourd" className="text-sm text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1.5 transition-colors">
+              <BookOpen className="w-4 h-4" /> Student Dashboard
             </Link>
           )}
         </div>
@@ -94,7 +103,9 @@ const Navbar = () => {
           animate={{ opacity: 1, y: 0 }}
           className="md:hidden absolute top-full left-0 w-full glass border-t border-zinc-800/50 py-4 px-6 flex flex-col space-y-4"
         >
-          <Link to="/projects" className="text-sm text-zinc-400" onClick={() => setIsOpen(false)}>Browse Projects</Link>
+          {!token && (
+            <Link to="/projects" className="text-sm text-zinc-400" onClick={() => setIsOpen(false)}>Browse Projects</Link>
+          )}
           {user?.role === 'Admin' && (
             <Link to="/admin" className="text-sm text-indigo-400 font-medium flex items-center gap-1.5" onClick={() => setIsOpen(false)}>
               <Shield className="w-4 h-4" /> Admin Dashboard
@@ -103,6 +114,11 @@ const Navbar = () => {
           {user?.role === 'Recruiter' && (
             <Link to="/recruiter" className="text-sm text-emerald-400 font-medium flex items-center gap-1.5" onClick={() => setIsOpen(false)}>
               <BookOpen className="w-4 h-4" /> Recruiter Dashboard
+            </Link>
+          )}
+          {user?.role === 'Student' && (
+            <Link to="/studentsdashbourd" className="text-sm text-cyan-400 font-medium flex items-center gap-1.5" onClick={() => setIsOpen(false)}>
+              <BookOpen className="w-4 h-4" /> Student Dashboard
             </Link>
           )}
           <hr className="border-zinc-800" />

@@ -41,7 +41,7 @@ const getProjectById = async (req, res) => {
 
 const updateProject = async (req, res) => {
   try {
-    const project = await projectService.updateProject(req.params.id, req.body, req.user);
+    const project = await projectService.updateProject(req.params.id, req.body, req.files, req.user);
     return res.status(200).json({
       message: 'Project updated successfully',
       project
