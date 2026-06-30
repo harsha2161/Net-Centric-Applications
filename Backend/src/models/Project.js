@@ -35,6 +35,10 @@ const projectSchema = new mongoose.Schema(
       type: String,
       default: ''
     },
+    gitRepoUrl: {
+      type: String,
+      default: ''
+    },
     isPublic: {
       type: Boolean,
       default: false

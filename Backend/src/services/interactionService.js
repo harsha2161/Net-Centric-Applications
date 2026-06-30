@@ -26,6 +26,13 @@ class InteractionService {
     return { action, totalLikes, projectId };
   }
 
+  async getLikesForProject(projectId, user) {
+    const totalLikes = await Like.countDocuments({ projectId });
+    const userId = user._id || user.id;
+    const userLiked = !!(await Like.findOne({ projectId, userId }));
+    return { totalLikes, userLiked, projectId };
+  }
+
   async followStudent(studentId, recruiterUser) {
     if (recruiterUser.role !== 'Recruiter') throw new Error('Forbidden: Only recruiters can follow students');
 
@@ -42,6 +49,12 @@ class InteractionService {
       await Follower.create({ recruiterId, studentId });
       return { status: 'followed', recruiterId, studentId };
     }
+  }
+
+  async getFollowStatus(studentId, recruiterUser) {
+    const recruiterId = recruiterUser._id || recruiterUser.id;
+    const existingFollow = await Follower.findOne({ recruiterId, studentId });
+    return { isFollowing: !!existingFollow, recruiterId, studentId };
   }
 }
 

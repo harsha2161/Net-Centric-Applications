@@ -12,6 +12,15 @@ const toggleLike = async (req, res) => {
   }
 };
 
+const getLikesForProject = async (req, res) => {
+  try {
+    const result = await interactionService.getLikesForProject(req.params.id, req.user);
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(400).json({ message: error.message });
+  }
+};
+
 const followStudent = async (req, res) => {
   try {
     const result = await interactionService.followStudent(req.params.studentId, req.user);
@@ -25,7 +34,18 @@ const followStudent = async (req, res) => {
   }
 };
 
+const getFollowStatus = async (req, res) => {
+  try {
+    const result = await interactionService.getFollowStatus(req.params.studentId, req.user);
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(400).json({ message: error.message });
+  }
+};
+
 module.exports = {
   toggleLike,
-  followStudent
+  getLikesForProject,
+  followStudent,
+  getFollowStatus
 };

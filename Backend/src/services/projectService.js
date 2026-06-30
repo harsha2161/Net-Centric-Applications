@@ -22,6 +22,7 @@ class ProjectService {
       coverImage: coverImage || projectData.coverImage || '',
       additionalImages: additionalImages.length > 0 ? additionalImages : (projectData.additionalImages || []),
       demoUrl: projectData.demoUrl || '',
+      gitRepoUrl: projectData.gitRepoUrl || '',
       isPublic: projectData.isPublic === 'true' || projectData.isPublic === true
     });
 

@@ -3,6 +3,7 @@ import axios from "axios";
 import { motion } from 'framer-motion';
 import { Search, ExternalLink } from 'lucide-react';
 import Navbar from '../components/Navbar';
+import { useNavigate } from 'react-router-dom';
 
 const demoProjects = [
     {
@@ -62,6 +63,7 @@ const BrowseProjects = () => {
     const [projects, setProjects] = useState([])
     const [searchQuery, setSearchQuery] = useState("")
     const [isLoading, setIsLoading] = useState(false)
+    const navigate = useNavigate()
 
     const token = localStorage.getItem("token")
 
@@ -181,7 +183,8 @@ const BrowseProjects = () => {
                                 <motion.div
                                     key={project.id}
                                     variants={itemVariants}
-                                    className="group relative bg-surface border border-border rounded-3xl overflow-hidden hover:border-primary-500/30 transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.4)] flex flex-col"
+                                    onClick={() => navigate(`/projects/${project.id}`)}
+                                    className="group relative bg-surface border border-border rounded-3xl overflow-hidden hover:border-primary-500/30 transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.4)] flex flex-col cursor-pointer"
                                 >
                                     {/* Image & Gradient Overlay */}
                                     <div className="relative h-48 w-full overflow-hidden bg-surface shrink-0">
