@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import BrowseProjects from './pages/BrowseProjects';
 import AdminDashboard from './pages/AdminDashboard';
+import StudentsDashbourd from './pages/StudentsDashbourd';
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/projects" element={<BrowseProjects/>} />
         <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/studentsdashbourd" element={<StudentsDashbourd/>} />
       </Routes>
     </Router>
   );
