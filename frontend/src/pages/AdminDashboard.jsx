@@ -25,6 +25,8 @@ const AdminDashboard = () => {
   const [inviteLoading, setInviteLoading] = useState(false);
   const [lastEmailPreview, setLastEmailPreview] = useState('');
   const [inviteMode, setInviteMode] = useState('single');
+  const [inviteStatusFilter, setInviteStatusFilter] = useState('');
+  const [inviteRoleFilter, setInviteRoleFilter] = useState('');
 
   const token = localStorage.getItem('token');
   const loggedInUser = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null;
@@ -711,10 +713,33 @@ const AdminDashboard = () => {
               {/* Sent Invitations Logs */}
               <div className="lg:col-span-2">
                 <Card className="p-0 overflow-hidden border border-zinc-800">
-                  <div className="px-6 py-4 border-b border-zinc-800 bg-zinc-900/50 flex justify-between items-center">
+                  <div className="px-6 py-4 border-b border-zinc-800 bg-zinc-900/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <h3 className="font-bold text-white flex items-center gap-2">
                       <Clock className="w-4 h-4 text-indigo-400" /> Invitation Logs
                     </h3>
+                    
+                    <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                      <select
+                        value={inviteStatusFilter}
+                        onChange={(e) => setInviteStatusFilter(e.target.value)}
+                        className="bg-zinc-900 border border-zinc-800 text-zinc-300 text-xs rounded-xl py-1.5 px-3 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      >
+                        <option value="">All Statuses</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Completed">Completed</option>
+                      </select>
+                      
+                      <select
+                        value={inviteRoleFilter}
+                        onChange={(e) => setInviteRoleFilter(e.target.value)}
+                        className="bg-zinc-900 border border-zinc-800 text-zinc-300 text-xs rounded-xl py-1.5 px-3 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      >
+                        <option value="">All Roles</option>
+                        <option value="Student">Student</option>
+                        <option value="Recruiter">Recruiter</option>
+                        <option value="Admin">Admin</option>
+                      </select>
+                    </div>
                   </div>
 
                   <div className="overflow-x-auto">
@@ -728,14 +753,24 @@ const AdminDashboard = () => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-zinc-800/40">
-                        {invitations.length === 0 ? (
-                          <tr>
-                            <td colSpan="4" className="px-6 py-12 text-center text-zinc-500">
-                              No previous invitation records found.
-                            </td>
-                          </tr>
-                        ) : (
-                          invitations.map((inv) => (
+                        {(() => {
+                          const filteredInvitations = invitations.filter((inv) => {
+                            const matchesStatus = inviteStatusFilter ? inv.status === inviteStatusFilter : true;
+                            const matchesRole = inviteRoleFilter ? inv.role === inviteRoleFilter : true;
+                            return matchesStatus && matchesRole;
+                          });
+
+                          if (filteredInvitations.length === 0) {
+                            return (
+                              <tr>
+                                <td colSpan="4" className="px-6 py-12 text-center text-zinc-500">
+                                  No matching invitation records found.
+                                </td>
+                              </tr>
+                            );
+                          }
+
+                          return filteredInvitations.map((inv) => (
                             <tr key={inv.id} className="hover:bg-zinc-800/5 transition-colors">
                               <td className="px-6 py-4 font-medium text-white flex items-center gap-2">
                                 <Mail className="w-4 h-4 text-zinc-500" />
@@ -757,8 +792,8 @@ const AdminDashboard = () => {
                                 </span>
                               </td>
                             </tr>
-                          ))
-                        )}
+                          ));
+                        })()}
                       </tbody>
                     </table>
                   </div>
