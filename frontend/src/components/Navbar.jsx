@@ -39,6 +39,11 @@ const Navbar = () => {
               <Shield className="w-4 h-4 animate-pulse" /> Admin Dashboard
             </Link>
           )}
+          {user?.role === 'Recruiter' && (
+            <Link to="/recruiter" className="text-sm text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1.5 transition-colors">
+              <BookOpen className="w-4 h-4" /> Recruiter Dashboard
+            </Link>
+          )}
         </div>
 
         <div className="hidden md:flex items-center space-x-4">
@@ -85,6 +90,11 @@ const Navbar = () => {
           {user?.role === 'Admin' && (
             <Link to="/admin" className="text-sm text-indigo-400 font-medium flex items-center gap-1.5" onClick={() => setIsOpen(false)}>
               <Shield className="w-4 h-4" /> Admin Dashboard
+            </Link>
+          )}
+          {user?.role === 'Recruiter' && (
+            <Link to="/recruiter" className="text-sm text-emerald-400 font-medium flex items-center gap-1.5" onClick={() => setIsOpen(false)}>
+              <BookOpen className="w-4 h-4" /> Recruiter Dashboard
             </Link>
           )}
           <hr className="border-zinc-800" />
