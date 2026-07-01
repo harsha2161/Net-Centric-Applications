@@ -1,6 +1,6 @@
 const Project = require('../models/Project');
 const eventEmitter = require('../events/emitters');
-const { uploadToCloudinary } = require('../utils/cloudinary');
+const { uploadBufferToCloudinary } = require('../utils/cloudinary');
 
 class ProjectService {
   async createProject(studentId, projectData, files, user) {
@@ -9,11 +9,12 @@ class ProjectService {
 
     if (files) {
       if (files.coverImage && files.coverImage.length > 0) {
-        coverImage = await uploadToCloudinary(files.coverImage[0].path, 'projects/covers');
+        const f = files.coverImage[0];
+        coverImage = await uploadBufferToCloudinary(f.buffer, 'projects/covers', f.originalname);
       }
       if (files.additionalImages && files.additionalImages.length > 0) {
-        const uploadPromises = files.additionalImages.map(file => 
-          uploadToCloudinary(file.path, 'projects/additional')
+        const uploadPromises = files.additionalImages.map(file =>
+          uploadBufferToCloudinary(file.buffer, 'projects/additional', file.originalname)
         );
         additionalImages = await Promise.all(uploadPromises);
       }
@@ -134,7 +135,8 @@ class ProjectService {
 
     let coverImage = project.coverImage;
     if (files && files.coverImage && files.coverImage.length > 0) {
-      coverImage = await uploadToCloudinary(files.coverImage[0].path, 'projects/covers');
+      const f = files.coverImage[0];
+      coverImage = await uploadBufferToCloudinary(f.buffer, 'projects/covers', f.originalname);
     }
 
     let additionalImages = [];
@@ -153,8 +155,8 @@ class ProjectService {
     }
 
     if (files && files.additionalImages && files.additionalImages.length > 0) {
-      const uploadPromises = files.additionalImages.map(file => 
-        uploadToCloudinary(file.path, 'projects/additional')
+      const uploadPromises = files.additionalImages.map(file =>
+        uploadBufferToCloudinary(file.buffer, 'projects/additional', file.originalname)
       );
       const newUploadedImages = await Promise.all(uploadPromises);
       additionalImages = [...additionalImages, ...newUploadedImages];

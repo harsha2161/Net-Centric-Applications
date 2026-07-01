@@ -14,6 +14,33 @@ if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && proce
 }
 
 /**
+ * Uploads a file Buffer directly to Cloudinary (for serverless / memoryStorage).
+ *
+ * @param {Buffer} buffer - File buffer from multer memoryStorage
+ * @param {string} folder - Destination folder on Cloudinary
+ * @param {string} originalname - Original filename (used to derive public_id)
+ * @returns {Promise<string>} The uploaded file's secure URL
+ */
+const uploadBufferToCloudinary = (buffer, folder = 'unishowcase', originalname = 'file') => {
+  return new Promise((resolve, reject) => {
+    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+      // No Cloudinary config — return a placeholder path (local dev fallback)
+      return resolve(`/uploads/${Date.now()}-${originalname}`);
+    }
+
+    const publicId = `${folder}/${Date.now()}-${path.parse(originalname).name}`;
+    const uploadStream = cloudinary.uploader.upload_stream(
+      { folder, public_id: publicId, resource_type: 'auto', overwrite: true },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result.secure_url);
+      }
+    );
+    uploadStream.end(buffer);
+  });
+};
+
+/**
  * Uploads a local file to Cloudinary and deletes the local temporary file.
  * If credentials are not configured, it returns a local relative path as fallback.
  * 
@@ -61,4 +88,5 @@ const uploadToCloudinary = async (filePath, folder = 'unishowcase') => {
   }
 };
 
-module.exports = { uploadToCloudinary };
+module.exports = { uploadToCloudinary, uploadBufferToCloudinary };
+
